@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor} from "pixi.js";
+import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} from "pixi.js";
 
 (async () => {
   // Create a new application
@@ -18,6 +18,7 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor} from "pix
     );
   }
 
+  const ticker = new Ticker();
   let isPlaying = true;
 
   const massA = 5; // mass of the square (in kg)
@@ -69,42 +70,40 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor} from "pix
   }
 
   function updateAnimation(delta: number) {
-    if (isPlaying) {
-      positionA += velocityA * delta;
-      blockA.x = positionA;
+    positionA += velocityA * delta;
+    blockA.x = positionA;
+    blockAVelocity.text = `${velocityA} m/s`;
+
+    positionB += velocityB * delta;
+    blockB.x = positionB;
+    blockBVelocity.text = `${velocityB} m/s`;
+
+    if(testAABB(blockA, blockB)) {
+      const newVelocityA = ((massA - massB) * velocityA + 2 * massB * velocityB ) / (massA + massB);
+      const newVelocityB = ((massB - massA) * velocityB + 2 * massA * velocityA ) / (massA + massB);
+
+      velocityA = newVelocityA;
+      velocityB = newVelocityB;
+
       blockAVelocity.text = `${velocityA} m/s`;
-
-      positionB += velocityB * delta;
-      blockB.x = positionB;
       blockBVelocity.text = `${velocityB} m/s`;
+    }
 
-      if(testAABB(blockA, blockB)) {
-        const newVelocityA = ((massA - massB) * velocityA + 2 * massB * velocityB ) / (massA + massB);
-        const newVelocityB = ((massB - massA) * velocityB + 2 * massA * velocityA ) / (massA + massB);
+    if(blockA.x > app.screen.width - blockA.width || blockA.x < 0) {
+      velocityA = -velocityA;
+      blockAVelocity.text = `${velocityA} m/s`;
+    }
 
-        velocityA = newVelocityA;
-        velocityB = newVelocityB;
-
-        blockAVelocity.text = `${velocityA} m/s`;
-        blockBVelocity.text = `${velocityB} m/s`;
-      }
-
-      if(blockA.x > app.screen.width - blockA.width || blockA.x < 0) {
-        velocityA = -velocityA;
-        blockAVelocity.text = `${velocityA} m/s`;
-      }
-
-      if(blockB.x > app.screen.width - blockB.width || blockB.x < 0) {
-        velocityB = -velocityB;
-        blockBVelocity.text = `${velocityB} m/s`;
-      }
+    if(blockB.x > app.screen.width - blockB.width || blockB.x < 0) {
+      velocityB = -velocityB;
+      blockBVelocity.text = `${velocityB} m/s`;
     }
   }
 
   function playAnimation() {
     isPlaying = true;
 
-    app.ticker.start();
+    ticker.start();
 
     playButton.visible = false;
     pauseButton.visible = true;
@@ -112,7 +111,7 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor} from "pix
 
   function pauseAnimation() {
     isPlaying = false;
-    app.ticker.stop();
+    ticker.stop();
 
     playButton.visible = true;
     pauseButton.visible = false;
@@ -155,8 +154,11 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor} from "pix
   app.stage.addChild(pauseButton);
 
   // Listen for animate update
-  app.ticker.add((time) => {
+  ticker.add((time) => {
     const delta = time.deltaTime;
-    updateAnimation(delta);
+    if (isPlaying) {
+      updateAnimation(delta);
+    }
   });
+  ticker.start();
 })();
