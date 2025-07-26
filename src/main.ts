@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} from "pixi.js";
+import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, Container} from "pixi.js";
 
 (async () => {
   // Create a new application
@@ -21,14 +21,14 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} f
   const ticker = new Ticker();
   let isPlaying = true;
 
-  const massA = 5; // mass of the square (in kg)
-  const massB = 3;
+  const massA = 3; // mass of the square (in kg)
+  const massB = 7;
 
   const sideA = massA * 10 // Length of a square side, Assume it is equal to mass multiply by 10
   const sideB = massB * 10
 
-  let velocityA = 7; // initial velocity of the square (in px/s)
-  let velocityB = -10;
+  let velocityA = 15; // initial velocity of the square (in px/s)
+  let velocityB = -12;
 
   let positionA = 0; // initial position on the x-axis
   let positionB = app.screen.width - sideB;
@@ -72,11 +72,11 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} f
   function updateAnimation(delta: number) {
     positionA += velocityA * delta;
     blockA.x = positionA;
-    blockAVelocity.text = `${velocityA} m/s`;
+    blockAVelocity.text = `${Math.abs(velocityA).toFixed(3)} m/s`;
 
     positionB += velocityB * delta;
     blockB.x = positionB;
-    blockBVelocity.text = `${velocityB} m/s`;
+    blockBVelocity.text = `${Math.abs(velocityB).toFixed(3)} m/s`;
 
     if(testAABB(blockA, blockB)) {
       const newVelocityA = ((massA - massB) * velocityA + 2 * massB * velocityB ) / (massA + massB);
@@ -85,18 +85,18 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} f
       velocityA = newVelocityA;
       velocityB = newVelocityB;
 
-      blockAVelocity.text = `${velocityA} m/s`;
-      blockBVelocity.text = `${velocityB} m/s`;
+      blockAVelocity.text = `${Math.abs(velocityA).toFixed(3)} m/s`;
+      blockBVelocity.text = `${Math.abs(velocityB).toFixed(3)} m/s`;
     }
 
     if(blockA.x > app.screen.width - blockA.width || blockA.x < 0) {
       velocityA = -velocityA;
-      blockAVelocity.text = `${velocityA} m/s`;
+      blockAVelocity.text = `${Math.abs(velocityA).toFixed(3)} m/s`;
     }
 
     if(blockB.x > app.screen.width - blockB.width || blockB.x < 0) {
       velocityB = -velocityB;
-      blockBVelocity.text = `${velocityB} m/s`;
+      blockBVelocity.text = `${Math.abs(velocityB).toFixed(3)} m/s`;
     }
   }
 
@@ -117,11 +117,26 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} f
     pauseButton.visible = false;
   }
 
+  function recenter() {
+    blockAVelocity.position.set((app.screen.width  - blockA.width) / 2 - 100, 100);
+    blockBVelocity.position.set((app.screen.width  - blockA.width) / 2 + 100, 100);
+
+    blockAMass.position.set((app.screen.width  - blockA.width) / 2 - 100, 150);
+    blockBMass.position.set((app.screen.width  - blockA.width) / 2 + 100, 150);
+
+    playButton.position.set(app.screen.width / 2, 500);
+    pauseButton.position.set(app.screen.width / 2, 500);
+  }
+
+  const container = new Container();
+  container.setSize(app.canvas.width, app.canvas.height);
+  app.stage.addChild(container);
+
   const blockA = createBlock(positionA, sideA, 0x00ff00);
   const blockB = createBlock(positionB, sideB, 0x0000ff);
 
-  app.stage.addChild(blockA);
-  app.stage.addChild(blockB);
+  container.addChild(blockA);
+  container.addChild(blockB);
 
 
   const blockAVelocity = createText(velocityA, "m/s", 0x00ff00, (app.screen.width  - blockA.width) / 2 - 100, 100);
@@ -130,11 +145,11 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} f
   const blockAMass = createText(massA, "Kg", 0x00ff00, (app.screen.width  - blockA.width) / 2 - 100, 150);
   const blockBMass = createText(massB, "Kg", 0x0000ff, (app.screen.width  - blockA.width) / 2 + 100, 150);
 
-  app.stage.addChild(blockAVelocity);
-  app.stage.addChild(blockBVelocity);
+  container.addChild(blockAVelocity);
+  container.addChild(blockBVelocity);
 
-  app.stage.addChild(blockAMass);
-  app.stage.addChild(blockBMass);
+  container.addChild(blockAMass);
+  container.addChild(blockBMass);
 
   const playTexture = await Assets.load("assets/play-button.png");
   const pauseTexture = await Assets.load("assets/pause-button.png");
@@ -144,14 +159,14 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} f
   playButton.addListener("pointerdown", () => {
     playAnimation();
   });
-  app.stage.addChild(playButton);
+  container.addChild(playButton);
 
   const pauseButton = createButton(pauseTexture, 50, app.screen.width / 2, 500, "static", "pointer");
   pauseButton.visible = true
   pauseButton.addListener("pointerdown", () => {
     pauseAnimation();
   });
-  app.stage.addChild(pauseButton);
+  container.addChild(pauseButton);
 
   // Listen for animate update
   ticker.add((time) => {
@@ -159,6 +174,7 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker} f
     if (isPlaying) {
       updateAnimation(delta);
     }
+    recenter();
   });
   ticker.start();
 })();
