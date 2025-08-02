@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, Container} from "pixi.js";
+import GUI from 'lil-gui';
 
 (async () => {
   // Create a new application
@@ -11,28 +12,104 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, C
   // Append the application canvas to the document body
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
-  function testAABB(blockA: Sprite, blockB: Sprite) {
-    return (
-        blockA.x < blockB.x + blockB.width &&
-            blockA.x + blockA.width > blockB.x
-    );
-  }
+  // GUI Controls
+  const gui = new GUI();
+  const controls = {
+    mass_A: 5,
+    mass_B: 10,
+    velocity_A: 15,
+    velocity_B: 10,
+    apply: function () {
+      resetParams()
+    },
+    reset: function () {
+      gui.reset();
+    }
+  };
 
+  gui.add(controls, "mass_A")
+      .name("mass A (Kg)")
+      .onChange((mass: number) => {
+    initialMassA = mass;
+  });
+  gui.add(controls, "mass_B")
+      .name("mass B (Kg)")
+      .onChange((mass: number) => {
+        initialMassB = mass;
+  });
+  gui.add(controls, "velocity_A")
+      .name("velocity A (m/s)").
+  onChange((velocity: number) => {
+        initialVelocityA = velocity;
+  });
+  gui.add(controls, "velocity_B")
+      .name("velocity B A(m/s)")
+      .onChange((velocity: number) => {
+    initialVelocityB = velocity;
+  });
+  gui.add(controls, "apply");
+  gui.add(controls, "reset");
+
+  // Ticker for animation
   const ticker = new Ticker();
   let isPlaying = true;
 
-  const massA = 3; // mass of the square (in kg)
-  const massB = 7;
+  // Initial parameters.
+  let initialMassA = controls.mass_A;
+  let initialMassB = controls.mass_B;
 
-  const sideA = massA * 10 // Length of a square side, Assume it is equal to mass multiply by 10
-  const sideB = massB * 10
+  let massA = initialMassA; // mass of a square (in kg)
+  let massB = initialMassB;
 
-  let velocityA = 15; // initial velocity of the square (in px/s)
-  let velocityB = -12;
+  let sideA = massA * 10 // Length of a square side, Assume it is equal to mass multiply by 10
+  let sideB = massB * 10
 
-  let positionA = 0; // initial position on the x-axis
-  let positionB = app.screen.width - sideB;
+  let initialVelocityA = controls.velocity_A;
+  let initialVelocityB = controls.velocity_B;
 
+  let velocityA = initialVelocityA; // initial velocity of a square (in px/s)
+  let velocityB = -initialVelocityB;
+
+  const initialPositionA = 0;
+  const initialPositionB = app.screen.width - sideB;
+
+  let positionA = initialPositionA; // initial position on the x-axis
+  let positionB = initialPositionB;
+
+
+  // Simple AABB collision text on the x-axis only
+  function testAABB(blockA: Sprite, blockB: Sprite) {
+    return (
+        blockA.x < blockB.x + blockB.width &&
+        blockA.x + blockA.width > blockB.x
+    );
+  }
+
+  // Function to reset the blocks speed and position
+  function resetParams() {
+    positionA = initialPositionA;
+    positionB = initialPositionB;
+
+    massA = initialMassA;
+    massB = initialMassB;
+
+    sideA = massA * 10
+    sideB = massB * 10
+
+    velocityA = initialVelocityA;
+    velocityB = initialVelocityB;
+
+    container.removeChild(blockA, blockB);
+
+    blockA = createBlock(positionA, sideA, 0x00ff00);
+    blockB = createBlock(positionB, sideB, 0x0000ff);
+    container.addChild(blockA, blockB);
+
+    blockAMass.text = `${massA} (Kg)`;
+    blockBMass.text = `${massB} (Kg)`;
+  }
+
+  // Function to create a block
   function createBlock(x: number, side: number, tint: number): Sprite {
     const block = new Sprite(Texture.WHITE);
     block.position.set(x, (app.screen.height / 2));
@@ -44,6 +121,7 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, C
     return block;
   }
 
+  // Function to create a PIXI text
   function createText(text: number, unit: string, fill: number, positionX:number, positionY: number): Text {
     const pixiText = new Text({
       text: `${text} (${unit})`,
@@ -58,6 +136,7 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, C
     return pixiText;
   }
 
+  // Function to create a Button
   function createButton(texture: Texture, size: number, positionX: number, positionY: number, eventMode: EventMode, cursor: Cursor): Sprite {
     const button = new Sprite(texture);
     button.anchor.set(0.5, 0.5);
@@ -69,7 +148,9 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, C
     return button;
   }
 
+  // Function to update to blocks position every frame
   function updateAnimation(delta: number) {
+    // Distance = velocity * deltaTime
     positionA += velocityA * delta;
     blockA.x = positionA;
     blockAVelocity.text = `${Math.abs(velocityA).toFixed(3)} m/s`;
@@ -79,6 +160,7 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, C
     blockBVelocity.text = `${Math.abs(velocityB).toFixed(3)} m/s`;
 
     if(testAABB(blockA, blockB)) {
+      // Formula for the velocity of two objects after they collide with each other
       const newVelocityA = ((massA - massB) * velocityA + 2 * massB * velocityB ) / (massA + massB);
       const newVelocityB = ((massB - massA) * velocityB + 2 * massA * velocityA ) / (massA + massB);
 
@@ -89,6 +171,7 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, C
       blockBVelocity.text = `${Math.abs(velocityB).toFixed(3)} m/s`;
     }
 
+    // Wall collision detection
     if(blockA.x > app.screen.width - blockA.width || blockA.x < 0) {
       velocityA = -velocityA;
       blockAVelocity.text = `${Math.abs(velocityA).toFixed(3)} m/s`;
@@ -132,8 +215,8 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, C
   container.setSize(app.canvas.width, app.canvas.height);
   app.stage.addChild(container);
 
-  const blockA = createBlock(positionA, sideA, 0x00ff00);
-  const blockB = createBlock(positionB, sideB, 0x0000ff);
+  let  blockA = createBlock(positionA, sideA, 0x00ff00);
+  let  blockB = createBlock(positionB, sideB, 0x0000ff);
 
   container.addChild(blockA);
   container.addChild(blockB);
@@ -169,8 +252,8 @@ import {Application, Sprite, Texture, Text, Assets, EventMode, Cursor, Ticker, C
   container.addChild(pauseButton);
 
   // Listen for animate update
-  ticker.add((time) => {
-    const delta = time.deltaTime;
+  ticker.add((ticker) => {
+    const delta = ticker.deltaTime;
     if (isPlaying) {
       updateAnimation(delta);
     }
