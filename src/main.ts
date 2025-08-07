@@ -43,7 +43,7 @@ import GUI from 'lil-gui';
         initialVelocityA = velocity;
   });
   gui.add(controls, "velocity_B")
-      .name("velocity B A(m/s)")
+      .name("velocity B (m/s)")
       .onChange((velocity: number) => {
     initialVelocityB = velocity;
   });
