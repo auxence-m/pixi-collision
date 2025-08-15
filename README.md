@@ -6,7 +6,7 @@ Link to Stackblitz environment: https://stackblitz.com/github/Auxence-M/pixi-col
 
 - Clone the repository :
 ```
-git clone https://github.com/Auxence-M/pixi-collision.git
+git clone https://github.com/auxence-m/pixi-collision.git
 ```
 
 - Navigate to the location of the directory :
