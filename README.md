@@ -1,6 +1,6 @@
 ## Run on Stackblitz
 
-Link to Stackblitz environment: https://stackblitz.com/github/Auxence-M/pixi-collision
+Link to Stackblitz environment: https://stackblitz.com/github/auxence-m/pixi-collision
 
 ## How to run
 
